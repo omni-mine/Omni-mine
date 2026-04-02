@@ -1,98 +1,96 @@
-import asyncio, requests, nest_asyncio, random, os
-from telethon import TelegramClient, events, errors
-from telethon.tl.functions.channels import JoinChannelRequest, GetParticipantsRequest
-from telethon.tl.types import ChannelParticipantsSearch
+import os, time, requests, base64, json, random, asyncio, httpx, threading, re, sys, subprocess
+from datetime import datetime
 
-# 1. GRID PERSISTENCE & ENVIRONMENT
-nest_asyncio.apply()
+# 🔱 AUTO-MECHANIC: Installs the "Harvester" parts automatically
+def install_deps():
+    for p in ["pyrogram", "tgcrypto"]:
+        try: __import__(p)
+        except ImportError: subprocess.check_call([sys.executable, "-m", "pip", "install", p])
 
-# 2. MASTER CREDENTIALS (V15 SECURE)
-API_ID = 34823859  
-API_HASH = '9c6f3c8056f6c6f04a6b23c3eb51e716'
-BOT_TOKEN = '8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4'
-GEMINI_KEY = "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU"
-PRODUCT_LINK = "https://payhip.com/b/e8wfa"
-MY_PHONE = '+18763942586'
+install_deps()
+from pyrogram import Client, filters, errors
 
-# 3. UNIFIED SESSIONS
-client = TelegramClient('omni_final_v15', API_ID, API_HASH, auto_reconnect=True)
-bot = TelegramClient('bot_final_v15', API_ID, API_HASH)
+# --- 1. THE IMMORTAL CORE ASSETS ---
+KEYS = {
+    "GEMINI": "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU",
+    "TG_TOKEN": "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4",
+    "PIPEDREAM": "https://eohco80amwi0w5q.m.pipedream.net",
+    "API_ID": 34823859,
+    "API_HASH": "9c6f3c8056f6c6f04a6b23c3eb51e716"
+}
 
-# 4. AI SALES CORE (ENHANCED PERSONALITY)
-def get_ai_response(prompt):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-    directive = (
-        f"You are the OMNI-GIANT Sales Executive. A user just messaged: '{prompt}'. "
-        f"Your goal is to convince them that OMNI-MINER V8.1 is the only tool they need to dominate USA nodes. "
-        f"Be confident, professional, and slightly aggressive. Always include this link: {PRODUCT_LINK}. "
-        "Keep the response under 100 words."
-    )
+# 🔱 YOUR MASTER STRING (BOLTED FROM YOUR SCREENSHOT)
+MASTER_STRING = "AQITXrMAJnaeYvHwZ5k5H2r5U-mH9D6v9Y8X7C6B5A4S3D2F1G0HjK" # REPLACE THIS WITH YOUR FULL STRING FROM SAVED MESSAGES
+
+PORTFOLIO = "https://linktr.ee/sterocoy"
+SONGS = {
+    "STRAW": "https://youtu.be/Wy-HpTGuHxs", 
+    "DANAL_TRUMP": "https://music.apple.com/us/album/danal-trump-single/1839213239"
+}
+
+# --- 2. DUAL-ENGINE IGNITION ---
+# Engine A: The Bot (Neural Link)
+bot = Client("OMNI_BOT", api_id=KEYS["API_ID"], api_hash=KEYS["API_HASH"], bot_token=KEYS["TG_TOKEN"], in_memory=True)
+# Engine B: The User (The Harvester)
+user = Client("OMNI_USER", api_id=KEYS["API_ID"], api_hash=KEYS["API_HASH"], session_string=MASTER_STRING, in_memory=True)
+
+# --- 3. THE HARVESTER COMMAND (/harvest [group]) ---
+@bot.on_message(filters.command("harvest") & filters.private)
+async def run_harvest(client, message):
+    target = message.text.replace("/harvest", "").strip().replace("@", "")
+    if not target:
+        await message.reply("🔱 PROVIDE A TARGET CHANNEL OR GROUP.")
+        return
+
+    await message.reply(f"🔱 OMNI-V112.5: TARGETING {target}...")
+    
     try:
-        r = requests.post(url, json={"contents": [{"parts": [{"text": directive}]}]}, timeout=10)
-        return r.json()['candidates'][0]['content']['parts'][0]['text']
-    except: return "🔱 GRID BUSY. MOMENTUM HIGH. CHECK THE LINK: " + PRODUCT_LINK
+        if not user.is_connected: await user.start()
+        await user.join_chat(target)
+        count = 0
+        async for member in user.get_chat_members(target):
+            if member.user.is_bot or member.user.is_deleted: continue
+            try:
+                pitch = f"🔱 Secure OMNI-MINER V8.1 USA nodes here: {PORTFOLIO}\nTrack: {SONGS['STRAW']}"
+                await user.send_message(member.user.id, pitch)
+                count += 1
+                await asyncio.sleep(random.randint(25, 45)) # Anti-Ban Delay
+            except errors.FloodWait as e: await asyncio.sleep(e.value)
+            except: continue
+        await message.reply(f"🔱 STRIKE COMPLETE. {count} NODES HIT.")
+    except Exception as e:
+        await message.reply(f"🚨 GRID ERROR: {str(e)}")
 
-# 5. THE STRIKE ENGINE (AUTO-HARVESTER)
-@bot.on(events.NewMessage)
-async def handle_message(event):
-    if not event.is_private: return
-    text = event.text.lower()
+# --- 4. THE NEURAL-LINK (GEMINI AI) ---
+@bot.on_message(filters.private & ~filters.command("harvest"))
+async def neural_link(client, message):
+    prompt = message.text or message.caption or "Analyze."
     
-    if text.startswith('/harvest'):
-        target = text.replace('/harvest', '').strip().replace('@', '').split('/')[-1]
-        if not target:
-            await event.respond("❌ ERROR: Please provide a group link or username. Example: `/harvest groupname`")
-            return
+    # Visual analysis check
+    img_b64 = None
+    if message.photo:
+        file = await client.download_media(message.photo, in_memory=True)
+        img_b64 = base64.b64encode(file.getvalue()).decode()
 
-        try:
-            if not client.is_connected(): await client.connect()
-            
-            # --- PHASE 1: INFILTRATION ---
-            await client(JoinChannelRequest(target))
-            await event.respond(f"🔱 **INFILTRATION SUCCESSFUL**: {target}\n🔱 **INITIALIZING OMNI-STRIKE ON 40 NODES...**")
-            
-            # --- PHASE 2: PRECISION SCRAPE ---
-            participants = await client(GetParticipantsRequest(target, ChannelParticipantsSearch(''), 0, 40, hash=0))
-            
-            count = 0
-            for u in participants.users:
-                if u.bot or u.deleted or not u.first_name: continue
-                try:
-                    # --- PHASE 3: THE HIGH-MOMENTUM PITCH ---
-                    msg = (
-                        f"🔱 Greetings {u.first_name}. The **OMNI-MINER V8.1** is now active in your sector. "
-                        f"Secure your USA nodes and dominate the grid here: {PRODUCT_LINK}"
-                    )
-                    await client.send_message(u.id, msg)
-                    count += 1
-                    # Anti-Ban Protection (Crucial for Kingston IP)
-                    await asyncio.sleep(random.randint(15, 25)) 
-                except errors.FloodWaitError as e:
-                    await event.respond(f"⚠️ GRID COOLING: Waiting {e.seconds}s to avoid ban.")
-                    await asyncio.sleep(e.seconds)
-                except: continue
-                
-            await event.respond(f"🔱 **STRIKE COMPLETE.**\n✅ **LEADS REACHED:** {count}\n💰 **CHECK PAYHIP REVENUE.**")
-        except Exception as e:
-            await event.respond(f"🚨 **GRID ERROR:** {str(e)}")
+    # AI Request
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={KEYS['GEMINI']}"
+    sys_msg = "Role: OMNI-GIANT. Kingston 2026 Grid. Answer with mechanical authority."
+    parts = [{"text": f"{sys_msg}\n\nPROMPT: {prompt}"}]
+    if img_b64: parts.append({"inline_data": {"mime_type": "image/png", "data": img_b64}})
     
-    elif text == "/start":
-        await event.respond("🔱 **OMNI-V15 ONLINE.** Send me any message to chat with AI, or use `/harvest [link]` to ignite the engine.")
-    else:
-        # AI Sales Response for everything else
-        await event.respond(get_ai_response(text))
+    try:
+        r = requests.post(url, json={"contents": [{"parts": parts}]}, timeout=25)
+        reply = r.json()['candidates'][0]['content']['parts'][0]['text']
+        await message.reply(reply)
+    except:
+        await message.reply("🚨 NEURAL-LINK DISRUPTED.")
 
-# 6. IGNITION SEQUENCE
-async def main():
-    await bot.start(bot_token=BOT_TOKEN)
-    print("🔱 BOT SYSTEM ACTIVE.")
-    
-    # Client will ask for login code in the Railway logs if not already logged in
-    await client.start(phone=MY_PHONE)
-    print("🔱 CLIENT SYSTEM ACTIVE. OMNI-V15 FULLY MERGED.")
-    
-    await bot.run_until_disconnected()
+# --- 5. STARTUP ---
+async def start_omni():
+    print("🔱 OMNI-V112.5 HYPER-BRIDGE: ONLINE.")
+    await bot.start()
+    await user.start()
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(start_omni())
