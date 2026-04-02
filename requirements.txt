@@ -1,5 +1,8 @@
 streamlit
-• pyrogram
-• tgcrypto
-• nest_asyncio
-• requests
+pyrogram
+tgcrypto
+nest_asyncio
+requests
+google-generativeai
+httpx
+beautifulsoup4
