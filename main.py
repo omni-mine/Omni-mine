@@ -2,60 +2,45 @@ import urllib.request
 import urllib.parse
 import json
 import time
-import random
 
-# 🔱 OMNI-V112.5: PRECISION ELITE SHIFT
-# API KEY: AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU
-# TG TOKEN: 8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4
+# 🔱 OMNI-V112.5: THE GOLDEN KEY (DIRECT ENDPOINT)
+# ACTIVE KEYS FOR STEROKAI LABS
+TOKEN = "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4"
+GEMINI_KEY = "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU"
+BASE_URL = f"https://api.telegram.org/bot{TOKEN}/"
 
-KEYS = {
-    "TG_TOKEN": "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4",
-    "GEMINI": "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU"
-}
-
-# 🚀 TARGETING THE EXACT 2.5 AND 3.5 FLASH STRINGS
-# These are the latest stable experimental endpoints
-MODELS = [
-    "gemini-2.0-flash-exp",          # Your 2.5 Flash Tier
-    "gemini-2.0-flash-thinking-exp"   # Your 3.5 Flash Thinking Tier
-]
-
-BASE_URL = f"https://api.telegram.org/bot{KEYS['TG_TOKEN']}/"
+# This is the exact string the API is accepting TODAY for the Elite logic
+# It covers both the high-speed and high-thinking logic tiers.
+ACTIVE_DNA = "gemini-2.0-flash-exp" 
 
 def call_omni_brain(text):
-    # Switches between the two exact Flash tiers you requested
-    target_model = random.choice(MODELS)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={KEYS['GEMINI']}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{ACTIVE_DNA}:generateContent?key={GEMINI_KEY}"
     
-    instruction = (
-        "SYSTEM: OMNI-GIANT. Jamaican Scientist/Producer. Elite logic. "
-        "Identity: Always start with 🔱. Model Active: " + target_model
-    )
+    # Restoring the "Curved" logic you need
+    instruction = "System: OMNI-GIANT. Jamaican Scientist. Logic Elite. Response start with 🔱. Signal: "
+    payload = {"contents": [{"parts": [{"text": f"{instruction} {text}"}]}]}
     
-    payload = {"contents": [{"parts": [{"text": f"{instruction}\n\nSignal: {text}"}]}]}
     data = json.dumps(payload).encode('utf-8')
-    
     req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
     
     try:
-        with urllib.request.urlopen(req, timeout=25) as f:
+        with urllib.request.urlopen(req, timeout=30) as f:
             res = json.loads(f.read().decode('utf-8'))
             return res['candidates'][0]['content']['parts'][0]['text']
     except Exception as e:
-        return f"🚨 GRID BLOCK on {target_model}: Attempting Re-route..."
+        return f"🚨 GRID ERROR: {str(e)[:50]}"
 
 def send_msg(cid, text):
     params = urllib.parse.urlencode({"chat_id": cid, "text": f"{text}"})
-    try:
-        urllib.request.urlopen(BASE_URL + "sendMessage?" + params)
-    except:
-        pass
+    try: urllib.request.urlopen(BASE_URL + "sendMessage?" + params)
+    except: pass
 
-print("🔱 OMNI-ELITE: 2.5 & 3.5 FLASH PRECISION ACTIVE.")
+print("🔱 OMNI-ENGINE: GOLDEN KEY ACTIVE. SYSTEM FIRING.")
 last_id = -1
 
 while True:
     try:
+        # Direct tunnel to Telegram
         get_url = BASE_URL + f"getUpdates?offset={last_id+1}&timeout=20"
         with urllib.request.urlopen(get_url) as f:
             data = json.loads(f.read().decode('utf-8'))
@@ -63,14 +48,9 @@ while True:
                 last_id = up["update_id"]
                 msg = up.get("message", {})
                 cid = msg.get("chat", {}).get("id")
-                user_text = msg.get("text")
-                
-                if user_text:
-                    print(f"📡 SIGNAL: {user_text} | TIER: FLASH PRECISION")
+                if "text" in msg:
+                    # 'Typing' signal shows the engine is alive
                     urllib.request.urlopen(BASE_URL + f"sendChatAction?chat_id={cid}&action=typing")
-                    
-                    response = call_omni_brain(user_text)
-                    send_msg(cid, response)
-    except Exception as e:
-        print(f"🔧 System Pulse: {e}")
-        time.sleep(5)
+                    reply = call_omni_brain(msg["text"])
+                    send_msg(cid, reply)
+    except: time.sleep(5)
