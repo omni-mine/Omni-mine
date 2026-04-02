@@ -1,8 +1,2 @@
-pyrogram
-tgcrypto
-google-generativeai
-nest_asyncio
-aiohttp
-certifi
-pydantic
-uvloop
+telethon
+python-dotenv
