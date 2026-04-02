@@ -1,52 +1,54 @@
-import asyncio, datetime, random
-import google.generativeai as genai
-from pyrogram import Client, filters, errors
+import os
+import asyncio
+from telethon import TelegramClient, events
 
-KEYS = {
-    "GEMINI": "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU",
-    "TG_TOKEN": "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4",
-    "MASTER_STRING": "AQITXrMApOu_j55ppe3joKFT4PITOopth2WK8_Inq0CuEdi01SzhXbIjPAl9na3CwDGnsMb5egtGnGNNVPog9OwkaxaTWIwmA8yPp6wZ1xki6IuemFjz3oaFjd8YJSeNg_Kpj8HhtoXe6i4PA3TuoPX0IWn0X2NI0QiKTaN7imKKD6uyjUc28XJ2-jwSOW1cELUWQXGIANZsA-LMIpxyhZEnQojYBwiCkdyjUwGb0WIaKOIV5sigTpigayiTjYKoDTnPWhcUU0tVJNIzUu83u8dT3_sOkchL6IPvDmIAFiAOsmZ4AblwSgJQEe_7cPvfbV5M9k4YwTWvLN8Q4KqTz9Y5USzljAAAAAIHHCRIAA",
-    "COMMANDER_ID": 7649534062 
-}
+# --- CONFIGURATION WRAPPERS ---
+# Using int() to force numerical format and .get() to prevent 'KeyError' crashes
+try:
+    API_ID = int(os.environ.get("API_ID", 0))
+    API_HASH = os.environ.get("API_HASH", "")
+    BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+    # Wrapped to ensure this is always a number
+    COMMANDER_ID = int(os.environ.get("COMMANDER_ID", 0))
+except ValueError:
+    print("❌ ERROR: API_ID or COMMANDER_ID must be a number in Railway Variables!")
 
-genai.configure(api_key=KEYS["GEMINI"])
-model = genai.GenerativeModel('gemini-1.5-flash')
-bot = Client("BOT_CORE", api_id=34823859, api_hash="9c6f3c8056f6c6f04a6b23c3eb51e716", bot_token=KEYS["TG_TOKEN"], in_memory=True)
-user = Client("USER_CORE", api_id=34823859, api_hash="9c6f3c8056f6c6f04a6b23c3eb51e716", session_string=KEYS["MASTER_STRING"], in_memory=True)
+# Initialize the Client
+client = TelegramClient('ghost_session', API_ID, API_HASH)
 
-# 🔱 THE LIVE REPORTER
-@bot.on_message(filters.command("status") & filters.private)
-async def check_status(client, message):
-    now = datetime.datetime.now().strftime("%H:%M:%S")
-    await message.reply(f"🔱 OMNI-STATUS [{now}]:\n✅ Brain: Active\n✅ Harvester: Ready\n✅ Grid: 2026 Secured")
+# --- BRAIN 1: THE RESPONDER ---
+@client.on(events.NewMessage(pattern='/start'))
+async def start(event):
+    await event.reply("🔱 GHOST-V1 ONLINE. System is active, Commander.")
 
-@bot.on_message(filters.command("harvest") & filters.private)
-async def strike(client, message):
-    target = message.text.split(" ")[-1].replace("@", "")
-    await message.reply(f"🔱 INITIATING STRIKE ON {target}...")
+@client.on(events.NewMessage)
+async def handle_all(event):
+    # Logic to prevent the bot from responding to itself or double-responding
+    if event.is_private and event.message.text != '/start':
+        await event.reply("Message received. The 16-brain hierarchy is listening.")
+
+# --- THE ENGINE CORE ---
+async def main():
+    print("🛰️ Booting Ghost Engine...")
+    
+    await client.start(bot_token=BOT_TOKEN)
+    print("✅ Connection to Telegram established.")
+
+    # --- THE SAFETY WRAPPER ---
+    # This prevents the 'resolve_peer' crash from killing the bot
     try:
-        count = 0
-        async for member in user.get_chat_members(target):
-            if member.user.is_bot: continue
-            try:
-                await user.send_message(member.user.id, "🔱 Join the Movement: https://linktr.ee/sterocoy")
-                count += 1
-                # 🔱 REPORT EVERY 5 SUCCESSES
-                if count % 5 == 0:
-                    await bot.send_message(KEYS["COMMANDER_ID"], f"🔱 HARVEST REPORT: {count} nodes secured in {target}.")
-                await asyncio.sleep(random.randint(150, 350))
-            except errors.FloodWait as e:
-                await bot.send_message(KEYS["COMMANDER_ID"], f"🚨 GRID BLOCK: Sleeping {e.value}s.")
-                await asyncio.sleep(e.value)
-            except: continue
-        await message.reply(f"🔱 MISSION COMPLETE: {count} NODES TOTAL.")
+        if COMMANDER_ID != 0:
+            await client.send_message(COMMANDER_ID, "🔱 GHOST-V1 ONLINE")
+            print(f"🚀 Startup signal sent to Commander: {COMMANDER_ID}")
     except Exception as e:
-        await message.reply(f"🚨 ERROR: {str(e)}")
+        print(f"⚠️ Startup signal bypassed: {e}. (Bot is still running!)")
 
-async def start():
-    await bot.start(); await user.start()
-    await bot.send_message(KEYS["COMMANDER_ID"], "🔱 GHOST-V1 ONLINE.\n\nType /status to check health.\nType /harvest [target] to begin.")
-    while True: await asyncio.sleep(3600)
+    print("📡 Ghost Engine is now idling in the cloud. Waiting for commands...")
+    await client.run_until_disconnected()
 
-if __name__ == "__main__":
-    asyncio.run(start())
+if __name__ == '__main__':
+    # Standard Python loop for asynchronous scripts
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Engine stopped by user.")
