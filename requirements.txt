@@ -1,3 +1,6 @@
 streamlit
-pandas
+requests
+nest_asyncio
 telethon
+pandas
+
