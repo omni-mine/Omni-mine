@@ -1,9 +1,5 @@
 streamlit
-requests
-nest_asyncio
-telethon
-pandas
-pyrogram
-tgcrypto
-requests
-httpx
+• pyrogram
+• tgcrypto
+• nest_asyncio
+• requests
