@@ -1,74 +1,60 @@
 import requests
 import time
-import os
-import smtplib
-import random
-import re
-import threading
-from email.message import EmailMessage
+import base64
+import json
 
-# 🔱 MASTER VAULT
+# 🔱 MASTER VAULT: DIRECT INJECTION
+# These match your successful "Upgrade 7" notes
 KEYS = {
-    "TG_TOKEN": "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4",
-    "EMAIL": "johnbrownw89@gmail.com",
-    "EMAIL_PASS": "pqxjwojwiuuflctc"
+    "GEMINI": "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU",
+    "TG_TOKEN": "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4"
 }
 
 T_URL = f"https://api.telegram.org/bot{KEYS['TG_TOKEN']}/"
-LINKS = ["https://linktr.ee/sterocoy"]
 
-def ghost_scrape(keyword):
-    """Shielded Scraper: Won't crash the bot if blocked"""
-    search_url = f"https://www.google.com/search?q={keyword}+site:facebook.com+%22%40gmail.com%22"
-    headers = {"User-Agent": "Mozilla/5.0"}
+def call_gemini(prompt, img_b64=None):
+    """The logic engine that worked in your screenshots"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={KEYS['GEMINI']}"
+    
+    content_part = [{"text": f"You are the OMNI-GIANT. Jamaican Scientist/Producer. Elite logic. Respond to: {prompt}"}]
+    if img_b64:
+        content_part.append({"inline_data": {"mime_type": "image/png", "data": img_b64}})
+
+    payload = {"contents": [{"parts": content_part}]}
+    
     try:
-        r = requests.get(search_url, headers=headers, timeout=5)
-        emails = re.findall(r'[a-zA-Z0-9._%+-]+@gmail\.com', r.text)
-        return list(set(emails))
-    except Exception as e:
-        print(f"📡 Grid Status: Scrape Shielded (Blocked by Google)")
-        return []
+        r = requests.post(url, json=payload, timeout=20).json()
+        return r['candidates'][0]['content']['parts'][0]['text']
+    except:
+        return "🚨 GRID OVERLOAD: Signal weak."
 
-def beam_email(target):
-    try:
-        msg = EmailMessage()
-        msg.set_content(f"Greetings,\n\nNew music drop from Sterocoy.\n🔗 LISTEN: {random.choice(LINKS)}")
-        msg['Subject'] = "STEROCOY: NEW DROP"; msg['From'] = KEYS["EMAIL"]; msg['To'] = target
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(KEYS["EMAIL"], KEYS["EMAIL_PASS"])
-            smtp.send_message(msg)
-        return True
-    except: return False
-
-# --- THE COMMAND CENTER ---
-print("👑 OMNI-V900 INVINCIBLE: ONLINE.")
+print("👑 OMNI-ENGINE: ONLINE. READY FOR COMMANDS.")
 last_id = -1
 
 while True:
     try:
-        # Long polling for stability
-        updates = requests.get(f"{T_URL}getUpdates?offset={last_id+1}&timeout=10").json()
+        updates = requests.get(f"{T_URL}getUpdates?offset={last_id+1}&timeout=20").json()
         for up in updates.get("result", []):
             last_id = up["update_id"]
             msg = up.get("message", {})
             cid = msg.get("chat", {}).get("id")
             text = msg.get("text", "")
+            
+            # If there's an image, process it
+            img_b64 = None
+            if "photo" in msg:
+                fid = msg["photo"][-1]["file_id"]
+                f_info = requests.get(f"{T_URL}getFile?file_id={fid}").json()
+                img_raw = requests.get(f"https://api.telegram.org/file/bot{KEYS['TG_TOKEN']}/{f_info['result']['file_path']}").content
+                img_b64 = base64.b64encode(img_raw).decode("utf-8")
+                text = msg.get("caption", "Analyze this.")
 
-            if text == "/ping":
-                requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": "🏓 PONG. Ghost is active."})
-
-            if text.startswith("/ghost"):
-                query = text[7:].strip() or "dancehall fans"
-                requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": f"👻 Scanning for '{query}'..."})
-                found = ghost_scrape(query)
-                if found:
-                    requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": f"🎯 Found {len(found)}. Beaming..."})
-                    for target in found[:3]:
-                        beam_email(target)
-                        time.sleep(10)
-                else:
-                    requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": "🚨 Grid Blocked. Using cached leads..."})
-
+            if text:
+                # Show the "typing" status in Telegram
+                requests.post(f"{T_URL}sendChatAction", data={"chat_id": cid, "action": "typing"})
+                reply = call_gemini(text, img_b64)
+                requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": f"🔱 {reply}"})
+                
     except Exception as e:
         print(f"🔧 System Pulse: {e}")
         time.sleep(2)
