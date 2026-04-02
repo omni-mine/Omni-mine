@@ -1,54 +1,84 @@
+import requests
+import time
 import os
-import asyncio
-from telethon import TelegramClient, events
+import smtplib
+import random
+import re
+import threading
+from datetime import datetime
+from email.message import EmailMessage
 
-# --- CONFIGURATION WRAPPERS ---
-# Using int() to force numerical format and .get() to prevent 'KeyError' crashes
-try:
-    API_ID = int(os.environ.get("API_ID", 0))
-    API_HASH = os.environ.get("API_HASH", "")
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-    # Wrapped to ensure this is always a number
-    COMMANDER_ID = int(os.environ.get("COMMANDER_ID", 0))
-except ValueError:
-    print("❌ ERROR: API_ID or COMMANDER_ID must be a number in Railway Variables!")
+# 🔱 MASTER VAULT: DIRECT INJECTION (No Variables Needed)
+KEYS = {
+    "GEMINI": "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU",
+    "TG_TOKEN": "8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4",
+    "EMAIL": "johnbrownw89@gmail.com",
+    "EMAIL_PASS": "pqxjwojwiuuflctc"
+}
 
-# Initialize the Client
-client = TelegramClient('ghost_session', API_ID, API_HASH)
+T_URL = f"https://api.telegram.org/bot{KEYS['TG_TOKEN']}/"
+TRACKS = ["Donald Trump", "Straw"]
+LINKS = ["https://linktr.ee/sterocoy", "https://music.apple.com/us/album/danal-trump-single/1839213239"]
 
-# --- BRAIN 1: THE RESPONDER ---
-@client.on(events.NewMessage(pattern='/start'))
-async def start(event):
-    await event.reply("🔱 GHOST-V1 ONLINE. System is active, Commander.")
-
-@client.on(events.NewMessage)
-async def handle_all(event):
-    # Logic to prevent the bot from responding to itself or double-responding
-    if event.is_private and event.message.text != '/start':
-        await event.reply("Message received. The 16-brain hierarchy is listening.")
-
-# --- THE ENGINE CORE ---
-async def main():
-    print("🛰️ Booting Ghost Engine...")
-    
-    await client.start(bot_token=BOT_TOKEN)
-    print("✅ Connection to Telegram established.")
-
-    # --- THE SAFETY WRAPPER ---
-    # This prevents the 'resolve_peer' crash from killing the bot
+# --- THE GHOST ENGINE (LEAD HARVESTER) ---
+def ghost_scrape(keyword):
+    search_url = f"https://www.google.com/search?q={keyword}+site:facebook.com+OR+site:instagram.com+%22%40gmail.com%22"
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        if COMMANDER_ID != 0:
-            await client.send_message(COMMANDER_ID, "🔱 GHOST-V1 ONLINE")
-            print(f"🚀 Startup signal sent to Commander: {COMMANDER_ID}")
-    except Exception as e:
-        print(f"⚠️ Startup signal bypassed: {e}. (Bot is still running!)")
+        r = requests.get(search_url, headers=headers, timeout=10)
+        emails = re.findall(r'[a-zA-Z0-9._%+-]+@gmail\.com', r.text)
+        return list(set(emails))
+    except: return []
 
-    print("📡 Ghost Engine is now idling in the cloud. Waiting for commands...")
-    await client.run_until_disconnected()
-
-if __name__ == '__main__':
-    # Standard Python loop for asynchronous scripts
+def beam_email(target):
     try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("Engine stopped by user.")
+        dna = "\u200b" + "".join(random.choices('ACGT', k=16))
+        track = random.choice(TRACKS)
+        bio = (f"Greetings,\n\nYou've been selected for an exclusive listen from Sterocoy.\n"
+               f"Direct from Jamaica.\n\n🔥 DROP: {track}\n🔗 STREAM: {random.choice(LINKS)}\n\n{dna}")
+        msg = EmailMessage()
+        msg.set_content(bio)
+        msg['Subject'] = f"STEROCOY: {track}"; msg['From'] = KEYS["EMAIL"]; msg['To'] = target
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(KEYS["EMAIL"], KEYS["EMAIL_PASS"])
+            smtp.send_message(msg)
+        return True
+    except: return False
+
+# 🚀 AUTO-PILOT (Background Harvester)
+def auto_pilot_engine():
+    while True:
+        leads = ghost_scrape("dancehall fans")
+        for target in leads[:5]:
+            beam_email(target)
+            time.sleep(120)
+        time.sleep(21600) # Wait 6 hours before next harvest
+
+threading.Thread(target=auto_pilot_engine, daemon=True).start()
+
+# --- THE COMMAND CENTER ---
+print("👑 OMNI-V900 INVINCIBLE: ONLINE.")
+last_id = -1
+while True:
+    try:
+        updates = requests.get(f"{T_URL}getUpdates?offset={last_id+1}&timeout=5").json()
+        for up in updates.get("result", []):
+            last_id = up["update_id"]
+            msg = up.get("message", {}); cid = msg.get("chat", {}).get("id")
+            text_prompt = msg.get("text", "")
+
+            if text_prompt == "/ping":
+                requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": "🏓 PONG. Engine is active."})
+
+            if text_prompt.startswith("/ghost"):
+                query = text_prompt[7:].strip() or "dancehall fans"
+                requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": f"👻 Ghosting '{query}'..."})
+                found = ghost_scrape(query)
+                if found:
+                    requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": f"🎯 Found {len(found)}. Beaming..."})
+                    for target in found[:5]:
+                        if beam_email(target):
+                            requests.post(f"{T_URL}sendMessage", data={"chat_id": cid, "text": f"✅ Beamed: {target}"})
+                        time.sleep(120)
+    except Exception:
+        time.sleep(1)
