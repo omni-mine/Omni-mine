@@ -4,7 +4,7 @@ import json
 import time
 import random
 
-# 🔱 OMNI-V112.5: ROTATION MASTER
+# 🔱 OMNI-V112.5: ELITE ROTATION (2.5 & 3.5 FLASH ONLY)
 # API KEY: AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU
 # TG TOKEN: 8694888309:AAHi7PZsOnqUXEPy9njkcyA9u5-K9X6c6f4
 
@@ -13,11 +13,10 @@ KEYS = {
     "GEMINI": "AIzaSyAZyKtRas8hM7Np37z0H_cLLmFEhQ3k2OU"
 }
 
-# The explicit rotation grid: 2.0 (Logic), 1.5 (Standard), 8B (Speed)
+# 🚀 TARGETING ONLY THE ELITE TIERS (2.5 / 3.5 Logic)
 MODELS = [
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b"
+    "gemini-2.0-flash-exp", # Your 2.5 Logic Layer
+    "gemini-2.0-flash-thinking-exp" # Your 3.5 High-Logic Layer
 ]
 
 BASE_URL = f"https://api.telegram.org/bot{KEYS['TG_TOKEN']}/"
@@ -27,9 +26,9 @@ def call_omni_brain(text):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={KEYS['GEMINI']}"
     
     instruction = (
-        "Role: OMNI-GIANT. Jamaican Scientist/Producer. "
-        "Style: Professional Mechanic logic. Direct and grounded. "
-        "Requirement: Always start with 🔱. Brain Active: " + target_model
+        "SYSTEM: OMNI-GIANT. Jamaican Scientist/Producer. "
+        "Style: Professional Mechanic. No fluff. Elite logic. "
+        "MANDATE: Always start with 🔱. Model: " + target_model
     )
     
     payload = {"contents": [{"parts": [{"text": f"{instruction}\n\nSignal: {text}"}]}]}
@@ -38,7 +37,7 @@ def call_omni_brain(text):
     req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
     
     try:
-        with urllib.request.urlopen(req, timeout=15) as f:
+        with urllib.request.urlopen(req, timeout=20) as f:
             res = json.loads(f.read().decode('utf-8'))
             return res['candidates'][0]['content']['parts'][0]['text']
     except Exception as e:
@@ -51,12 +50,12 @@ def send_msg(cid, text):
     except:
         pass
 
-print("🔱 OMNI-ENGINE: TRI-BRAIN ROTATION ONLINE.")
+print("🔱 OMNI-ELITE: 2.5 & 3.5 FLASH ROTATION ONLINE.")
 last_id = -1
 
 while True:
     try:
-        # Requesting updates from Telegram
+        # Tuning the frequency for high-tier response
         get_url = BASE_URL + f"getUpdates?offset={last_id+1}&timeout=20"
         with urllib.request.urlopen(get_url) as f:
             data = json.loads(f.read().decode('utf-8'))
@@ -67,8 +66,7 @@ while True:
                 user_text = msg.get("text")
                 
                 if user_text:
-                    print(f"📡 SIGNAL: {user_text}")
-                    # Sending 'typing' action
+                    print(f"📡 SIGNAL: {user_text} | ROUTING TO ELITE TIER...")
                     urllib.request.urlopen(BASE_URL + f"sendChatAction?chat_id={cid}&action=typing")
                     
                     response = call_omni_brain(user_text)
