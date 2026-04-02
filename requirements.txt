@@ -1,15 +1,8 @@
-streamlit
 pyrogram
 tgcrypto
 google-generativeai
 nest_asyncio
-requests
-httpx
-beautifulsoup4
 aiohttp
-aiofiles
 certifi
 pydantic
 uvloop
-pysocks
-asyncio
